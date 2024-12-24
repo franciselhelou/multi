@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NLP Pipeline</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      font-family: "Roboto", sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    body.dark-mode {
+      background-color: #1a1a1a;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    body.dark-mode .container {
+      background-color: #2a2a2a;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    input[type="text"],
+    textarea {
+      width: 100%;
+      height: 250px;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    .topicInput {
+      height: 50px  !important;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      flex: 1;
+      margin-right: 10px;
+    }
+
+    button:last-child {
+      margin-right: 0;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .toggle-container {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      display: flex;
+      align-items: center;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+      margin-left: 10px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 20px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    .modeLabel {
+      margin-top: 10px;
+    }
+
+    input:checked + .slider {
+      background-color: #007bff;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    #output h2 {
+      margin-top: 20px;
+      cursor: pointer;
+    }
+
+    .agent-output {
+      display: none;
+      margin-top: 10px;
+    }
+
+    /* Styling for agent outputs */
+    .agent-output p {
+      white-space: pre-wrap;
+    }
+
+    .sign-in-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+    }
+
+    .sign-in-button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .sign-in-button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="sign-in-container">
+    <button class="sign-in-button">Sign In</button>
+  </div>
+  <div class="toggle-container">
+    <span class="modeLabel" id="modeLabel">Dark Mode</span>
+    <label class="switch">
+      <input type="checkbox" id="darkModeToggle" />
+      <span class="slider"></span>
+    </label>
+  </div>
+  <div class="container">
+    <h1>AI SEO Optimization Pipeline</h1>
+
+    <div>
+      <label for="topicInput">Enter the topic:</label>
+      <input type="text" id="topicInput" class="topicInput" />
+    </div>
+
+    <div>
+      <label for="originalInput">Enter the original input:</label>
+      <textarea id="originalInput"></textarea>
+    </div>
+
+    <p>
+      Choose either running agent by agent click run critic agent or running
+      the entire pipeline once
+    </p>
+
+    <div class="button-container">
+      <button id="runCriticAgentButton">Run Critic Agent</button>
+      <button id="runPipelineButton">Run Pipeline</button>
+    </div>
+
+    <div
+      id="loadingIndicator"
+      style="display: none; text-align: center; margin-top: 20px"
+    >
+      <p>Processing...</p>
+    </div>
+
+    <div id="output">
+      <!-- Outputs for individual agents -->
+      <!-- Critic Agent Output -->
+      <h2 id="criticAgentOutputHeading" style="display: none;">
+        Critic Agent Output:
+      </h2>
+      <div class="agent-output" id="criticAgentOutput"></div>
+      <button id="runEthicalAgentButton" style="display: none;">
+        Run Ethical Agent
+      </button>
+
+      <!-- Ethical Agent Output -->
+      <h2 id="ethicalAgentOutputHeading" style="display: none;">
+        Ethical Agent Output:
+      </h2>
+      <div class="agent-output" id="ethicalAgentOutput"></div>
+      <button id="runRestructuringAgentButton" style="display: none;">
+        Run Restructuring Agent
+      </button>
+
+      <!-- Restructuring Agent Output -->
+      <h2 id="restructuringAgentOutputHeading" style="display: none;">
+        Restructuring Agent Output:
+      </h2>
+      <div class="agent-output" id="restructuringAgentOutput"></div>
+      <button id="runSchemaAgentButton" style="display: none;">
+        Run Schema Agent
+      </button>
+
+      <!-- Schema Formatter Agent Output -->
+      <h2 id="schemaFormatterAgentOutputHeading" style="display: none;">
+        Schema Formatter Agent Output:
+      </h2>
+      <div class="agent-output" id="schemaFormatterAgentOutput"></div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const darkModeToggle = document.getElementById("darkModeToggle");
+      const body = document.body;
+      const modeLabel = document.getElementById("modeLabel");
+      const runCriticAgentButton = document.getElementById(
+        "runCriticAgentButton"
+      );
+      const runPipelineButton = document.getElementById("runPipelineButton");
+      const loadingIndicator = document.getElementById("loadingIndicator");
+
+      // Get references to the agent output headings and outputs
+      const criticAgentOutputHeading = document.getElementById("criticAgentOutputHeading");
+      const criticAgentOutput = document.getElementById("criticAgentOutput");
+      const ethicalAgentOutputHeading = document.getElementById("ethicalAgentOutputHeading");
+      const ethicalAgentOutput = document.getElementById("ethicalAgentOutput");
+      const restructuringAgentOutputHeading = document.getElementById("restructuringAgentOutputHeading");
+      const restructuringAgentOutput = document.getElementById("restructuringAgentOutput");
+      const schemaFormatterAgentOutputHeading = document.getElementById("schemaFormatterAgentOutputHeading");
+      const schemaFormatterAgentOutput = document.getElementById("schemaFormatterAgentOutput");
+
+      darkModeToggle.addEventListener("change", function () {
+        if (darkModeToggle.checked) {
+          body.classList.add("dark-mode");
+          modeLabel.textContent = "Light Mode";
+        } else {
+          body.classList.remove("dark-mode");
+          modeLabel.textContent = "Dark Mode";
+        }
+      });
+
+      function showLoading(buttonsToHide) {
+        buttonsToHide.forEach(function (button) {
+          button.style.display = "none";
+        });
+        loadingIndicator.style.display = "block";
+      }
+
+      function hideLoading() {
+        loadingIndicator.style.display = "none";
+      }
+
+      // Run Pipeline Button Click Handler
+      runPipelineButton.addEventListener("click", function () {
+        showLoading([runCriticAgentButton, runPipelineButton]);
+        const topicInput = document.getElementById("topicInput").value;
+        const originalInput = document.getElementById("originalInput").value;
+
+        fetch("/run_pipeline", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            topic_input: topicInput,
+            original_input: originalInput,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            // Hide loading indicator
+            hideLoading();
+
+            if (data.error) {
+              alert("Error: " + data.error);
+              // Show the buttons again
+              runCriticAgentButton.style.display = "inline-block";
+              runPipelineButton.style.display = "inline-block";
+              return;
+            }
+
+            // Display Critic Agent Output
+            criticAgentOutput.innerHTML = `<p>${data.critic_agent_output.replace(/\n+/g, "<br>")}</p>`;
+            criticAgentOutput.style.display = "block";
+            criticAgentOutputHeading.style.display = "block";
+
+            // Display Ethical Agent Output
+            ethicalAgentOutput.innerHTML = `<p>${data.ethical_agent_output.replace(/\n+/g, "<br>")}</p>`;
+            ethicalAgentOutput.style.display = "block";
+            ethicalAgentOutputHeading.style.display = "block";
+
+            // Display Restructuring Agent Output
+            restructuringAgentOutput.innerHTML = `<p>${data.restructuring_agent_output.replace(/\n+/g, "<br>")}</p>`;
+            restructuringAgentOutput.style.display = "block";
+            restructuringAgentOutputHeading.style.display = "block";
+
+            // Display Schema Formatter Agent Output
+            schemaFormatterAgentOutput.innerHTML = `<p>${data.schema_formatter_agent_output.replace(/\n+/g, "")}</p>`;
+            schemaFormatterAgentOutput.style.display = "block";
+            schemaFormatterAgentOutputHeading.style.display = "block";
+
+            // Optionally, hide buttons for individual agents if they are not needed
+            document.getElementById("runEthicalAgentButton").style.display = "none";
+            document.getElementById("runRestructuringAgentButton").style.display = "none";
+            document.getElementById("runSchemaAgentButton").style.display = "none";
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            hideLoading();
+            alert("An error occurred while running the pipeline.");
+            // Show the buttons again
+            runCriticAgentButton.style.display = "inline-block";
+            runPipelineButton.style.display = "inline-block";
+          });
+      });
+
+      // Existing code for individual agents (if you want to keep them)
+      runCriticAgentButton.addEventListener("click", function () {
+        showLoading([runCriticAgentButton, runPipelineButton]);
+        const topicInput = document.getElementById("topicInput").value;
+        const originalInput = document.getElementById("originalInput").value;
+
+        fetch("/critic_agent", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            topic_input: topicInput,
+            original_text: originalInput,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            criticAgentOutput.innerHTML = `<p>${data.output_critic_agent.replace(/\n+/g, "<br>")}</p>`;
+            criticAgentOutput.style.display = "block";
+            criticAgentOutputHeading.style.display = "block";
+
+            // Show the button for the next agent
+            const runEthicalAgentButton = document.getElementById(
+              "runEthicalAgentButton"
+            );
+            runEthicalAgentButton.style.display = "block";
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          })
+          .finally(() => {
+            hideLoading();
+          });
+      });
+
+      // Toggle visibility of agent outputs on heading click (optional)
+      const headings = document.querySelectorAll("#output h2");
+      headings.forEach((heading) => {
+        heading.addEventListener("click", function () {
+          const outputDiv = heading.nextElementSibling;
+          if (
+            outputDiv.style.display === "none" ||
+            outputDiv.style.display === ""
+          ) {
+            outputDiv.style.display = "block";
+          } else {
+            outputDiv.style.display = "none";
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
